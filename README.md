@@ -10,6 +10,4 @@
 
 ### 如果您觉得还不错的话可以请我喝杯咖啡
 
-![wxpay](wxpay.png)
-
-![alipay](alipay.png)
+![wxpay](MyPay.png)
