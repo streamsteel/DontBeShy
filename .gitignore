@@ -1,4 +1,6 @@
 *.jpg
+!alipay.png
+!wxpay.png
 *.png
 .*
 !.gitignore
