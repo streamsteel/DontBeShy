@@ -9,12 +9,13 @@ from urllib import parse
 from bs4 import BeautifulSoup
 from requests.exceptions import RequestException
 import time
+from multiprocessing import Pool
 
 # 代理
-# proxies = {
-#     'https' : 'https://127.0.0.1:1080',
-#     'http' : 'http://127.0.0.1:1080'
-# }
+proxy = ''
+proxies = {
+    'https' : 'https://'+proxy,
+}
 
 baseUrl = 'https://www.douban.com/group/haixiuzu/discussion?'
 
@@ -26,10 +27,23 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.84 Safari/537.36'
 }
 
+def get_proxy():
+    # 蘑菇代理接口
+    api_url = 'http://piping.mogumiao.com/proxy/api/get_ip_bs?appKey=4413430e0b224f59807475162ca1a4f4&count=20&expiryDate=0&format=1&newLine=2'
+    r = requests.get(api_url, headers=headers)
+    json_data = r.json()
+    if type(json_data['msg']) == list:
+        proxy_list = json_data['msg'][0]
+        port = proxy_list['port']
+        ip = proxy_list['ip']
+        proxy = ip + ':' + port
+        return proxy
+    else:
+        return None
 
 def get_one_page(url):
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, proxies=proxies)
         if response.status_code == 200:
             return response.text
         return None
@@ -51,7 +65,7 @@ def parse_one_page(html):
 
 
 def get_img(url):
-    r = requests.get(url, headers=headers)
+    r = requests.get(url, headers=headers, proxies=proxies)
     soup = BeautifulSoup(r.text, 'lxml')
     try:
         img_list = soup.find('div', class_='image-wrapper').find_all('img')
@@ -64,7 +78,7 @@ def get_img(url):
 
 
 def saveImg(img_url, dirname):
-    r = requests.get(img_url, headers=headers)
+    r = requests.get(img_url, headers=headers, proxies=proxies)
     img_content = r.content
     try:
         with open('./img/'+dirname+'.jpg', 'wb') as f:
@@ -75,6 +89,15 @@ def saveImg(img_url, dirname):
 
 
 def main(offset):
+    global proxies
+    # 获取proxy
+    proxy = get_proxy()
+    if proxy == None:
+        print('代理使用光了,没办法只能停下来了……')
+        exit()
+    
+    proxies = {'https' : 'https://'+proxy}
+
     print("正在保存第"+str(offset+1)+"页")
 
     params['start'] = offset * 25
@@ -92,6 +115,8 @@ def main(offset):
 
 
 if __name__ == '__main__':
-    for page in range(3768):
-        main(page)
-        time.sleep(5)
+    for page in range(1000):
+        try:
+            main(page)
+        except:
+            continue
